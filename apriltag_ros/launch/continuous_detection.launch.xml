@@ -1,7 +1,11 @@
 <launch>
   <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
-  <arg name="camera_name" default="camera_rect" />
-  <arg name="image_topic" default="image_rect" />
+  <arg name="camera_name" default="/camera/color" />
+  <arg name="image_topic" default="image_rect_raw" />
+  <arg name="target_offset" default="0.9" />
+  <arg name="source_frame_name" default="tag_7" />
+  <arg name="target_frame_name" default="track_target" />
+
 
   <node pkg="apriltag_ros" exec="apriltag_ros_continuous_detector_node" name="apriltag_ros_continuous_detector_node" output="screen" launch-prefix="$(var launch_prefix)" >
     <!-- Remap topics from those used in code to those on the ROS network -->
@@ -14,4 +18,7 @@
 
     <param name="publish_tag_detections_image" value="true" />
   </node>
+
+  <!-- Static transform from tag_7 to track_frame -->
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="tag_7_to_track_frame_tf" args="0 0 $(var target_offset) 0 1.5708 0 $(var source_frame_name) $(var target_frame_name)" />
 </launch>

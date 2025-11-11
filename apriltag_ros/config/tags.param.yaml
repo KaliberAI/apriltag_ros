@@ -21,10 +21,10 @@
     #   ...
     #
     standalone_tags:
-      tag_names: ["tag_3"]
-      tag_3:
-        id: 3
-        size: 1.0
+      tag_names: ["tag_7"]
+      tag_7:
+        id: 7
+        size: 0.08
 
     # ## Tag bundle definitions
     # ### Remarks
@@ -50,10 +50,10 @@
     #         qz: QUAT_Z_VAL
     #       ...
     #   ...
-    tag_bundles:
-      bundle_names: ["bundle_0"]
-      bundle_0:
-        layout:
-          ids: [3]
-          3:
-            size: 1.0
+    # tag_bundles:
+    #   bundle_names: ["bundle_0"]
+    #   bundle_0:
+    #     layout:
+    #       ids: [3]
+    #       3:
+    #         size: 1.0
