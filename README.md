@@ -1,91 +1,151 @@
-# apriltag_ros
+# AprilTag ROS 2 tracker
 
-`apriltag_ros` is a Robot Operating System (ROS) wrapper of the [AprilTag 3 visual fiducial detector](https://april.eecs.umich.edu/software/apriltag.html). For details and tutorials, please see the [ROS wiki](http://wiki.ros.org/apriltag_ros).
+This repository contains a ROS 2 wrapper around AprilTag 3, configured for the
+`tag36h11` markers used by this project. It detects tags in a calibrated camera
+stream, publishes their poses, and optionally broadcasts a TF frame for each
+configured tag.
 
-`apriltag_ros` depends on the latest release of the [AprilTag library](https://github.com/AprilRobotics/apriltag). Clone it into your catkin workspace before building.
+## Included printable tags
 
-**Authors**: Danylo Malyuta, Wolfgang Merkt
+Print-ready SVG files for IDs 1 through 7 are in [`tags/tag36h11`](tags/tag36h11).
+Each file has:
 
-**Maintainers**: [Danylo Malyuta](mailto:danylo.malyuta@gmail.com) ([Autonomous Control Laboratory](https://www.aa.washington.edu/research/acl), University of Washington), [Wolfgang Merkt](https://github.com/wxmerkt)
+- AprilTag family: `tag36h11`
+- black detection-square size: 40 mm
+- total SVG size, including the white quiet zone: 50 mm
 
-## Quickstart
+Print the SVG at **100% / actual size**. Disable "fit to page" and verify that
+the outside edge of the black square measures 40 mm after printing. Do not crop
+or cover the white border.
 
-Starting with a working ROS installation (Kinetic and Melodic are supported):
+The same 40 mm measurement is configured as `0.04` metres in
+[`apriltag_ros/config/tags.param.yaml`](apriltag_ros/config/tags.param.yaml).
+If the printed black square is a different size, update that file or the
+estimated distance will be scaled incorrectly.
+
+## Requirements
+
+- ROS 2 Humble
+- A calibrated camera publishing a rectified image and `CameraInfo`
+- The dependencies declared in
+  [`apriltag_ros/package.xml`](apriltag_ros/package.xml), including the ROS 2
+  `apriltag` package
+
+## Clone and build
+
+```bash
+mkdir -p ~/apriltag_ws/src
+cd ~/apriltag_ws/src
+git clone --branch ros2-port https://github.com/KaliberAI/apriltag_ros.git
+
+cd ~/apriltag_ws
+source /opt/ros/humble/setup.bash
+rosdep install --from-paths src --ignore-src -r -y
+colcon build --symlink-install
+source install/setup.bash
 ```
-export ROS_DISTRO=melodic               # Set this to your distro, e.g. kinetic or melodic
-source /opt/ros/$ROS_DISTRO/setup.bash  # Source your ROS distro 
-mkdir -p ~/catkin_ws/src                # Make a new workspace 
-cd ~/catkin_ws/src                      # Navigate to the source space
-git clone https://github.com/AprilRobotics/apriltag.git      # Clone Apriltag library
-git clone https://github.com/AprilRobotics/apriltag_ros.git  # Clone Apriltag ROS wrapper
-cd ~/catkin_ws                          # Navigate to the workspace
-rosdep install --from-paths src --ignore-src -r -y  # Install any missing packages
-catkin build    # Build all packages in the workspace (catkin_make_isolated will work also)
+
+The generated `build/`, `install/`, and `log/` directories are deliberately not
+stored in Git.
+
+## Run the detector
+
+By default, the launch file expects these camera topics:
+
+```text
+/camera/color/image_rect_raw
+/camera/color/camera_info
 ```
-See the [ROS wiki](http://wiki.ros.org/apriltag_ros) for details and tutorials.
 
-## Tag Size Definition
+Start detection with:
 
-For a correct depth estimation (and hence the correct full pose) it is necessary to specify the tag size in config/tags.yaml correctly. In the [Wiki for the AprilTag Library](https://github.com/AprilRobotics/apriltag/wiki/AprilTag-User-Guide#pose-estimation)  the correct interpretation of the term "tag size" is explained. The size is defined by the length of the black/white border between the complete black and white rectangle of any tag type. Note that for apriltag3 marker families this does not in fact correspond to the outside of the marker.
+```bash
+source /opt/ros/humble/setup.bash
+source ~/apriltag_ws/install/setup.bash
 
-Below is a visualization of the tag size (red arrow) to be specified for the most common tag classes:
-![Tag Size Guide](./apriltag_ros/docs/tag_size_guide.svg)
-
-## Contributing
-
-Pull requests are welcome! Especially for the following areas:
-
-- Publishing of the AprilTag 3 algorithm intermediate images over a ROS image topic (which AprilTag 3 already generates when `tag_debug==1`)
-- Conversion of the bundle calibration script from MATLAB to Python
-- Extend calibration to support calibrating tags that cannot appear simultaneously with the master tag, but do appear simultaneously with other tags which themselves or via a similar relationship appear with the master tag (e.g. a bundle with the geometry of a cube - if the master is on one face, tags on the opposite face cannot currently be calibrated). This is basically "transform chaining" and potentially allows calibration of bundles with arbitrary geometry as long as a transform chain exists from any tag to the master tag
-- Supporting multiple tag family detection (currently all tags have to be of the same family). This means calling the detector once for each family. Because the core AprilTag 2 algorithm is the performance bottleneck, detection of `n` tag families will possibly decrease performance by `1/n` (tbd if this still holds for v3)
-
-## Changelog
-
-- In March 2019, the code was upgraded to AprilTag 3 and as thus the options `refine_pose`, `refine_decode`, and `black_border` were removed.
-
-## Copyright
-
-The source code in `apriltag_ros/` is original code that is the ROS wrapper itself, see the [LICENSE](https://github.com/AprilRobotics/apriltag_ros/blob/526b9455121ae0bb6b4c1c3db813f0fbdf78393c/LICENSE). It is inspired by [apriltags_ros](https://github.com/RIVeR-Lab/apriltags_ros) and provides a superset of its functionalities.
-
-If you use this code, please kindly inform [Danylo Malyuta](mailto:danylo.malyuta@gmail.com) (to maintain a list here of research works that have benefited from the code) and cite:
-
-- D. Malyuta, C. Brommer, D. Hentzen, T. Stastny, R. Siegwart, and R. Brockers, “[Long-duration fully autonomous operation of rotorcraft unmanned aerial systems for remote-sensing data acquisition](https://onlinelibrary.wiley.com/doi/abs/10.1002/rob.21898),” Journal of Field Robotics, p. arXiv:1908.06381, Aug. 2019.
-- C. Brommer, D. Malyuta, D. Hentzen, and R. Brockers, “[Long-duration autonomy for small rotorcraft UAS including recharging](https://ieeexplore.ieee.org/document/8594111),” in IEEE/RSJ International Conference on Intelligent Robots and Systems, IEEE, p. arXiv:1810.05683, oct 2018.
-- J. Wang and E. Olson, "[AprilTag 2: Efficient and robust fiducial detection](http://ieeexplore.ieee.org/document/7759617/)," in ''Proceedings of the IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)'', October 2016.
-
+ros2 launch apriltag_ros continuous_detection.launch.xml \
+  camera_name:=/camera/color \
+  image_topic:=image_rect_raw
 ```
-@article{Malyuta2019,
-  doi = {10.1002/rob.21898},
-  url = {https://doi.org/10.1002/rob.21898},
-  pages = {arXiv:1908.06381},
-  year = {2019},
-  month = aug,
-  publisher = {Wiley},
-  author = {Danylo Malyuta and Christian Brommer and Daniel Hentzen and Thomas Stastny and Roland Siegwart and Roland Brockers},
-  title = {Long-duration fully autonomous operation of rotorcraft unmanned aerial systems for remote-sensing data acquisition},
-  journal = {Journal of Field Robotics}
-}
-@inproceedings{Brommer2018,
-  doi = {10.1109/iros.2018.8594111},
-  url = {https://doi.org/10.1109/iros.2018.8594111},
-  pages = {arXiv:1810.05683},
-  year  = {2018},
-  month = {oct},
-  publisher = {{IEEE}},
-  author = {Christian Brommer and Danylo Malyuta and Daniel Hentzen and Roland Brockers},
-  title = {Long-Duration Autonomy for Small Rotorcraft {UAS} Including Recharging},
-  booktitle = {{IEEE}/{RSJ} International Conference on Intelligent Robots and Systems}
-}
-@inproceedings{Wang2016,
-  author = {Wang, John and Olson, Edwin},
-  booktitle = {2016 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
-  doi = {10.1109/IROS.2016.7759617},
-  isbn = {978-1-5090-3762-9},
-  month = {oct},
-  pages = {4193--4198},
-  publisher = {IEEE},
-  title = {{AprilTag 2: Efficient and robust fiducial detection}},
-  year = {2016}
-}
+
+Change `camera_name` and `image_topic` to match the camera driver. The image
+must be rectified, and its matching `CameraInfo` is required for pose
+estimation.
+
+## Outputs
+
+The detector publishes:
+
+```text
+/apriltag_ros_continuous_detector_node/tag_detections
+/apriltag_ros_continuous_detector_node/tag_detections_image
+/tf
 ```
+
+Inspect detections with:
+
+```bash
+ros2 topic echo /apriltag_ros_continuous_detector_node/tag_detections
+```
+
+Configured standalone tags also appear as TF child frames named `tag_1`
+through `tag_7`. For example:
+
+```bash
+ros2 run tf2_ros tf2_echo CAMERA_OPTICAL_FRAME tag_7
+```
+
+Replace `CAMERA_OPTICAL_FRAME` with the `frame_id` from the camera's
+`CameraInfo` message.
+
+The supplied launch file also publishes a project-specific static transform
+from `tag_7` to `track_target`. Its offset and frame names can be changed with
+the `target_offset`, `source_frame_name`, and `target_frame_name` launch
+arguments.
+
+## Use from another ROS 2 project
+
+Source this workspace before building the dependent workspace:
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/apriltag_ws/install/setup.bash
+cd ~/other_ws
+colcon build
+source install/setup.bash
+```
+
+Add this dependency to the consuming package's `package.xml`:
+
+```xml
+<depend>apriltag_ros</depend>
+```
+
+Then subscribe to `apriltag_ros/msg/AprilTagDetectionArray` on the detections
+topic above, or use the published tag frames through TF.
+
+## Configuration
+
+- Detector family and tuning:
+  [`apriltag_ros/config/settings.param.yaml`](apriltag_ros/config/settings.param.yaml)
+- Recognized IDs and physical sizes:
+  [`apriltag_ros/config/tags.param.yaml`](apriltag_ros/config/tags.param.yaml)
+- Camera topic remapping and target frame:
+  [`apriltag_ros/launch/continuous_detection.launch.xml`](apriltag_ros/launch/continuous_detection.launch.xml)
+
+Rebuild and source the workspace after changing installed configuration:
+
+```bash
+cd ~/apriltag_ws
+colcon build --symlink-install
+source install/setup.bash
+```
+
+## Upstream and license
+
+This project is based on
+[AprilRobotics/apriltag_ros](https://github.com/AprilRobotics/apriltag_ros) and
+the [AprilTag 3](https://github.com/AprilRobotics/apriltag) detector. See
+[`LICENSE`](LICENSE) for licensing terms and
+[`apriltag_ros/docs/tag_size_guide.svg`](apriltag_ros/docs/tag_size_guide.svg)
+for the upstream tag-size diagram.
